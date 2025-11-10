@@ -58,8 +58,29 @@ class _RegisterPageState extends State<RegisterPage> with SingleTickerProviderSt
       return;
     }
 
-    if (_passC.text.length < 6) {
-      _showError('A senha deve ter pelo menos 6 caracteres');
+    if (_passC.text.length < 8) {
+      _showError('A senha deve ter pelo menos 8 caracteres');
+      return;
+    }
+
+    // Validações de senha forte
+    if (!RegExp(r'[A-Z]').hasMatch(_passC.text)) {
+      _showError('A senha deve conter pelo menos uma letra maiúscula');
+      return;
+    }
+
+    if (!RegExp(r'[a-z]').hasMatch(_passC.text)) {
+      _showError('A senha deve conter pelo menos uma letra minúscula');
+      return;
+    }
+
+    if (!RegExp(r'[0-9]').hasMatch(_passC.text)) {
+      _showError('A senha deve conter pelo menos um número');
+      return;
+    }
+
+    if (!RegExp(r'[!@#$%^&*(),.?":{}|<>]').hasMatch(_passC.text)) {
+      _showError('A senha deve conter pelo menos um caractere especial');
       return;
     }
 
@@ -186,7 +207,7 @@ class _RegisterPageState extends State<RegisterPage> with SingleTickerProviderSt
                             controller: _passC,
                             obscure: true,
                             prefixIcon: Icons.lock_outline,
-                            hint: 'Digite sua senha (mínimo 6 caracteres)',
+                            hint: 'Mín. 8 caracteres, maiúscula, minúscula, número e especial',
                           ),
                           const SizedBox(height: 20),
                           CustomTextField(

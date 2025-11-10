@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../controllers/cesar_controller.dart';
+import '../controllers/auth_controller.dart';
 import '../widgets/custom_text_field.dart';
 import '../widgets/primary_button.dart';
 import '../theme/app_theme.dart';
@@ -47,10 +48,21 @@ class _EncryptPageState extends State<EncryptPage> {
   @override
   Widget build(BuildContext context) {
     final ctrl = Provider.of<CesarController>(context);
+    final auth = Provider.of<AuthController>(context, listen: false);
+    
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
         title: const Text('Criptografar'),
+        leading: IconButton(
+          icon: const Icon(Icons.logout_rounded),
+          onPressed: () async {
+            await auth.logout();
+            if (!context.mounted) return;
+            Navigator.of(context).pushReplacementNamed('/');
+          },
+          tooltip: 'Sair',
+        ),
         actions: [
           IconButton(
             onPressed: () {
