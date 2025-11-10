@@ -5,6 +5,7 @@ import 'controllers/cesar_controller.dart';
 import 'pages/login_page.dart';
 import 'pages/encrypt_page.dart';
 import 'pages/decrypt_page.dart';
+import 'theme/app_theme.dart';
 
 void main() {
   runApp(const MyApp());
@@ -22,10 +23,8 @@ class MyApp extends StatelessWidget {
       ],
       child: MaterialApp(
         title: 'Cifra de César',
-        theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-          useMaterial3: true,
-        ),
+        theme: AppTheme.lightTheme,
+        debugShowCheckedModeBanner: false,
         initialRoute: '/',
         routes: {
           '/': (_) => const LoginPage(),
