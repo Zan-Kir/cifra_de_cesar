@@ -9,10 +9,10 @@ class AuthController with ChangeNotifier {
 
   bool get isLoggedIn => _loggedIn;
 
-  /// Faz login utilizando o ApiService (mock). Armazena token no storage seguro.
-  Future<bool> login(String username, String password) async {
+  /// Faz login utilizando o ApiService. Armazena token no storage seguro.
+  Future<bool> login(String email, String password) async {
     try {
-      final token = await ApiService.instance.login(username, password);
+      final token = await ApiService.instance.login(email, password);
       await _storage.write(key: _tokenKey, value: token);
       _loggedIn = true;
       notifyListeners();

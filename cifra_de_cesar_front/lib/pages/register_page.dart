@@ -1,20 +1,20 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../controllers/auth_controller.dart';
+import '../services/api_service.dart';
 import '../widgets/custom_text_field.dart';
 import '../widgets/primary_button.dart';
 import '../theme/app_theme.dart';
 
-class LoginPage extends StatefulWidget {
-  const LoginPage({super.key});
+class RegisterPage extends StatefulWidget {
+  const RegisterPage({super.key});
 
   @override
-  State<LoginPage> createState() => _LoginPageState();
+  State<RegisterPage> createState() => _RegisterPageState();
 }
 
-class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMixin {
+class _RegisterPageState extends State<RegisterPage> with SingleTickerProviderStateMixin {
   final _emailC = TextEditingController();
   final _passC = TextEditingController();
+  final _confirmPassC = TextEditingController();
   bool _isLoading = false;
   late AnimationController _animController;
   late Animation<double> _fadeAnimation;
@@ -36,13 +36,77 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
   void dispose() {
     _emailC.dispose();
     _passC.dispose();
+    _confirmPassC.dispose();
     _animController.dispose();
     super.dispose();
   }
 
+  Future<void> _handleRegister() async {
+    // Validações
+    if (_emailC.text.trim().isEmpty) {
+      _showError('Por favor, insira um email');
+      return;
+    }
+
+    if (!_emailC.text.contains('@')) {
+      _showError('Por favor, insira um email válido');
+      return;
+    }
+
+    if (_passC.text.isEmpty) {
+      _showError('Por favor, insira uma senha');
+      return;
+    }
+
+    if (_passC.text.length < 6) {
+      _showError('A senha deve ter pelo menos 6 caracteres');
+      return;
+    }
+
+    if (_passC.text != _confirmPassC.text) {
+      _showError('As senhas não coincidem');
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      await ApiService.instance.register(_emailC.text.trim(), _passC.text);
+      
+      if (!mounted) return;
+      
+      // Mostra mensagem de sucesso
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Cadastro realizado com sucesso! Faça login para continuar.'),
+          backgroundColor: AppTheme.successColor,
+          duration: Duration(seconds: 3),
+        ),
+      );
+
+      // Volta para a tela de login
+      Navigator.of(context).pop();
+    } catch (e) {
+      if (!mounted) return;
+      _showError(e.toString().replaceAll('Exception: ', ''));
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: AppTheme.errorColor,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final auth = Provider.of<AuthController>(context);
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
@@ -57,6 +121,16 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
+                    // Botão voltar
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: IconButton(
+                        icon: const Icon(Icons.arrow_back, color: Colors.white, size: 28),
+                        onPressed: () => Navigator.of(context).pop(),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
                     Container(
                       width: 100,
                       height: 100,
@@ -66,7 +140,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                         boxShadow: AppTheme.elevatedShadow,
                       ),
                       child: const Icon(
-                        Icons.lock_outline_rounded,
+                        Icons.person_add_outlined,
                         size: 50,
                         color: Colors.white,
                       ),
@@ -74,14 +148,14 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                     const SizedBox(height: 32),
 
                     Text(
-                      'Cifra de César',
+                      'Criar Conta',
                       style: Theme.of(context).textTheme.displayMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Criptografia Clássica Segura',
+                      'Preencha os dados para se cadastrar',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                             color: AppTheme.textLight,
                           ),
@@ -112,58 +186,24 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                             controller: _passC,
                             obscure: true,
                             prefixIcon: Icons.lock_outline,
-                            hint: 'Digite sua senha',
+                            hint: 'Digite sua senha (mínimo 6 caracteres)',
+                          ),
+                          const SizedBox(height: 20),
+                          CustomTextField(
+                            label: 'Confirmar Senha',
+                            controller: _confirmPassC,
+                            obscure: true,
+                            prefixIcon: Icons.lock_outline,
+                            hint: 'Digite sua senha novamente',
                           ),
                           const SizedBox(height: 32),
                           PrimaryButton(
-                            label: 'Entrar',
-                            icon: Icons.login_rounded,
+                            label: 'Cadastrar',
+                            icon: Icons.person_add_rounded,
                             isLoading: _isLoading,
-                            onPressed: () async {
-                              setState(() => _isLoading = true);
-                              final ok = await auth.login(_emailC.text, _passC.text);
-                              setState(() => _isLoading = false);
-                              if (ok) {
-                                if (!context.mounted) return;
-                                Navigator.of(context).pushReplacementNamed('/encrypt');
-                              } else {
-                                if (!context.mounted) return;
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Erro ao fazer login'),
-                                    backgroundColor: AppTheme.errorColor,
-                                  ),
-                                );
-                              }
-                            },
+                            onPressed: _handleRegister,
                           ),
                         ],
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-
-                    // Link para cadastro
-                    GestureDetector(
-                      onTap: () {
-                        Navigator.of(context).pushNamed('/register');
-                      },
-                      child: Text.rich(
-                        TextSpan(
-                          text: 'Não tem uma conta? ',
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                color: AppTheme.textLight,
-                              ),
-                          children: [
-                            TextSpan(
-                              text: 'Cadastre-se',
-                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    color: AppTheme.primaryColor,
-                                    fontWeight: FontWeight.bold,
-                                    decoration: TextDecoration.underline,
-                                  ),
-                            ),
-                          ],
-                        ),
                       ),
                     ),
                     const SizedBox(height: 24),

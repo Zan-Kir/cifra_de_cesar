@@ -1,105 +1,121 @@
 import 'dart:async';
-// dart:convert not needed in mock service
-import 'dart:math';
-
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
-import '../utils/cesar.dart';
 
-/// Serviço de API fictício (mock) para uso local.
-/// Substitua as implementações por chamadas reais HTTP quando tiver o backend.
+/// Serviço de API para comunicação com o backend
 class ApiService {
   ApiService._privateConstructor();
   static final ApiService instance = ApiService._privateConstructor();
 
-  // Controle interno para simular usuários/tokens e hashes armazenados
-  final Map<String, Map<String, dynamic>> _sessions = {}; // token -> {username}
-  final Map<String, Map<String, dynamic>> _hashStore = {}; // hash -> {ciphertext, shift, used}
+  // URL base do backend - ajuste conforme necessário
+  static const String baseUrl = 'http://192.168.0.244:4000';
 
-  final Random _rnd = Random.secure();
+  /// Registra um novo usuário
+  Future<void> register(String email, String password) async {
+    final url = Uri.parse('$baseUrl/auth/register');
+    final response = await http.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'email': email,
+        'password': password,
+      }),
+    );
 
-  String _randomAlnum(int len) {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#\$%^&*()_+-=[]{}|;:,.<>?';
-    final sb = StringBuffer();
-    for (var i = 0; i < len; i++) {
-      sb.write(chars[_rnd.nextInt(chars.length)]);
+    if (response.statusCode != 201) {
+      final data = jsonDecode(response.body);
+      throw Exception(data['message'] ?? 'Erro ao registrar');
     }
-    return sb.toString();
   }
 
-  Future<String> login(String username, String password) async {
-    // simula delay de rede
-    await Future.delayed(const Duration(milliseconds: 400));
-    // Em modo mock, aceitamos qualquer credencial e retornamos um token JWT falso
-    final token = 'mock_${_randomAlnum(28)}';
-    _sessions[token] = {'username': username, 'createdAt': DateTime.now().toIso8601String()};
-    if (kDebugMode) {
-      // ignore: avoid_print
-      print('[ApiService] login mock: token=$token');
+  /// Faz login e retorna o token JWT
+  Future<String> login(String email, String password) async {
+    final url = Uri.parse('$baseUrl/auth/login');
+    final response = await http.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'email': email,
+        'password': password,
+      }),
+    );
+
+    if (response.statusCode != 200) {
+      final data = jsonDecode(response.body);
+      throw Exception(data['message'] ?? 'Erro ao fazer login');
     }
-    return token;
+
+    final data = jsonDecode(response.body);
+    return data['token'] as String;
   }
 
   Future<void> logout(String token) async {
-    await Future.delayed(const Duration(milliseconds: 100));
-    _sessions.remove(token);
+    // Logout é apenas local, removendo o token do storage
+    if (kDebugMode) {
+      print('[ApiService] logout: token removido localmente');
+    }
   }
 
-  bool _validateToken(String? token) {
-    if (token == null) return false;
-    return _sessions.containsKey(token);
-  }
-
-  /// Simula o endpoint /encrypt: recebe texto e shift, retorna hash armazenado.
+  /// Criptografa um texto e retorna o hash
   Future<String> encrypt(String? token, String text, int shift) async {
-    await Future.delayed(const Duration(milliseconds: 300));
-    if (!_validateToken(token)) {
-      throw Exception('Unauthorized');
+    if (token == null) throw Exception('Token não fornecido');
+
+    final url = Uri.parse('$baseUrl/hash/encrypt');
+    final response = await http.post(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({
+        'plaintext': text,
+        'shift': shift,
+      }),
+    );
+
+    if (response.statusCode != 200) {
+      final data = jsonDecode(response.body);
+      throw Exception(data['message'] ?? 'Erro ao criptografar');
     }
-    final ciphertext = Cesar.encode(text, shift);
-    // gerar hash seguro
-    final hash = _randomAlnum(24);
-    _hashStore[hash] = {
-      'ciphertext': ciphertext,
-      'shift': shift,
-      'used': false,
-      'createdAt': DateTime.now().toIso8601String(),
-    };
+
+    final data = jsonDecode(response.body);
     if (kDebugMode) {
-      // ignore: avoid_print
-      print('[ApiService] encrypt mock: hash=$hash ciphertext=$ciphertext shift=$shift');
+      print('[ApiService] encrypt: hash=${data['hash']}');
     }
-    return hash;
+    return data['hash'] as String;
   }
 
-  /// Simula o endpoint /decrypt: recebe hash, valida se existe e não foi usado, marca usado e retorna texto claro.
-  /// Simula o endpoint /decrypt: recebe hash e opcionalmente a mensagem cifrada
-  /// Se mensagem cifrada for fornecida, valida que bate com o armazenado.
+  /// Descriptografa usando um hash
   Future<String> decrypt(String? token, String hash, [String? ciphertextProvided]) async {
-    await Future.delayed(const Duration(milliseconds: 300));
-    if (!_validateToken(token)) {
-      throw Exception('Unauthorized');
+    if (token == null) throw Exception('Token não fornecido');
+
+    final url = Uri.parse('$baseUrl/hash/decrypt');
+    final body = <String, dynamic>{
+      'hash': hash,
+    };
+    if (ciphertextProvided != null) {
+      body['ciphertext'] = ciphertextProvided;
     }
-    final entry = _hashStore[hash];
-    if (entry == null) {
-      throw Exception('Hash not found');
+
+    final response = await http.post(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode(body),
+    );
+
+    if (response.statusCode != 200) {
+      final data = jsonDecode(response.body);
+      throw Exception(data['message'] ?? 'Erro ao descriptografar');
     }
-    if (entry['used'] == true) {
-      throw Exception('Hash already used');
-    }
-    final ciphertext = entry['ciphertext'] as String;
-    final shift = entry['shift'] as int;
-    // Se o usuário forneceu um ciphertext, valide se igual ao armazenado
-    if (ciphertextProvided != null && ciphertextProvided != ciphertext) {
-      throw Exception('Ciphertext does not match the stored value for this hash');
-    }
-    final plain = Cesar.decode(ciphertext, shift);
-    // marca como usado
-    entry['used'] = true;
-    entry['usedAt'] = DateTime.now().toIso8601String();
+
+    final data = jsonDecode(response.body);
     if (kDebugMode) {
-      // ignore: avoid_print
-      print('[ApiService] decrypt mock: hash=$hash -> plain=$plain');
+      print('[ApiService] decrypt: plaintext=${data['plaintext']}');
     }
-    return plain;
+    return data['plaintext'] as String;
   }
 }
