@@ -3,15 +3,12 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
 
-/// Serviço de API para comunicação com o backend
 class ApiService {
   ApiService._privateConstructor();
   static final ApiService instance = ApiService._privateConstructor();
 
-  // URL base do backend - ajuste conforme necessário
-  static const String baseUrl = 'http://192.168.0.244:4000';
+  static const String baseUrl = 'http://192.168.50.54:4000';
 
-  /// Registra um novo usuário
   Future<void> register(String email, String password) async {
     final url = Uri.parse('$baseUrl/auth/register');
     final response = await http.post(
@@ -29,7 +26,6 @@ class ApiService {
     }
   }
 
-  /// Faz login e retorna o token JWT
   Future<String> login(String email, String password) async {
     final url = Uri.parse('$baseUrl/auth/login');
     final response = await http.post(
@@ -51,13 +47,11 @@ class ApiService {
   }
 
   Future<void> logout(String token) async {
-    // Logout é apenas local, removendo o token do storage
     if (kDebugMode) {
       print('[ApiService] logout: token removido localmente');
     }
   }
 
-  /// Criptografa um texto e retorna o hash
   Future<String> encrypt(String? token, String text, int shift) async {
     if (token == null) throw Exception('Token não fornecido');
 
@@ -86,7 +80,6 @@ class ApiService {
     return data['hash'] as String;
   }
 
-  /// Descriptografa usando um hash
   Future<String> decrypt(String? token, String hash, [String? ciphertextProvided]) async {
     if (token == null) throw Exception('Token não fornecido');
 

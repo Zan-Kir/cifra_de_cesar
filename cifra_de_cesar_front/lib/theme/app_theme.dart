@@ -9,13 +9,11 @@ class AppTheme {
   static const Color surfaceColor = Colors.white;
   static const Color errorColor = Color(0xFFEF4444);
   static const Color successColor = Color(0xFF10B981);
-  
-  // Cores de texto
+
   static const Color textPrimary = Color(0xFF1E293B);
   static const Color textSecondary = Color(0xFF64748B);
   static const Color textLight = Color(0xFF94A3B8);
-  
-  // Gradientes
+
   static const LinearGradient primaryGradient = LinearGradient(
     colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
     begin: Alignment.topLeft,
@@ -28,7 +26,6 @@ class AppTheme {
     end: Alignment.bottomCenter,
   );
 
-  // Theme Data
   static ThemeData get lightTheme {
     return ThemeData(
       useMaterial3: true,
@@ -42,8 +39,7 @@ class AppTheme {
         onSurface: textPrimary,
       ),
       scaffoldBackgroundColor: backgroundColor,
-      
-      // AppBar theme
+
       appBarTheme: const AppBarTheme(
         elevation: 0,
         centerTitle: true,
@@ -55,8 +51,7 @@ class AppTheme {
           fontWeight: FontWeight.w600,
         ),
       ),
-      
-      // Card theme
+
       cardTheme: const CardThemeData(
         elevation: 0,
         shape: RoundedRectangleBorder(
@@ -64,8 +59,7 @@ class AppTheme {
         ),
         color: surfaceColor,
       ),
-      
-      // Input decoration theme
+
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: surfaceColor,
@@ -89,7 +83,6 @@ class AppTheme {
         labelStyle: const TextStyle(color: textSecondary),
       ),
       
-      // Elevated button theme
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           elevation: 0,
@@ -103,8 +96,7 @@ class AppTheme {
           ),
         ),
       ),
-      
-      // Text theme
+
       textTheme: const TextTheme(
         displayLarge: TextStyle(
           fontSize: 32,
@@ -137,8 +129,7 @@ class AppTheme {
       ),
     );
   }
-  
-  // Sombras customizadas
+
   static List<BoxShadow> get cardShadow => [
     BoxShadow(
       color: Colors.black.withValues(alpha: 0.04),
